@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_AsIs" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_AsIs">
+    <bpmn:participant id="Participant_Buyer" name="Покупець" />
+    <bpmn:participant id="Participant_Shop" name="Інтернет-магазин (As-Is)" processRef="Process_AsIs" />
+    <bpmn:messageFlow id="MF_1" sourceRef="Participant_Buyer" targetRef="Start_Order" />
+    <bpmn:messageFlow id="MF_2" sourceRef="End_Shipped" targetRef="Participant_Buyer" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_AsIs" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_AsIs">
+      <bpmn:lane id="Lane_Manager" name="Менеджер з продажів">
+        <bpmn:flowNodeRef>Start_Order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_RetryMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Call</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_CallResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Cancel</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Cancelled</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SendList</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifyOOS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_OOS</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NotifyShip</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Shipped</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Warehouse" name="Працівник складу">
+        <bpmn:flowNodeRef>Task_Pick</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gw_InStock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_Pack</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_Order" name="Отримано замовлення з сайту"><bpmn:outgoing>Flow_1</bpmn:outgoing><bpmn:messageEventDefinition id="Med_Start_Order" messageRef="Msg_Start_Order" /></bpmn:startEvent>
+    <bpmn:exclusiveGateway id="Gw_RetryMerge"><bpmn:incoming>Flow_1</bpmn:incoming><bpmn:incoming>Flow_Retry</bpmn:incoming><bpmn:outgoing>Flow_2</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_Review" name="Переглянути замовлення"><bpmn:incoming>Flow_2</bpmn:incoming><bpmn:outgoing>Flow_3</bpmn:outgoing></bpmn:userTask>
+    <bpmn:userTask id="Task_Call" name="Зателефонувати клієнту для підтвердження"><bpmn:incoming>Flow_3</bpmn:incoming><bpmn:outgoing>Flow_4</bpmn:outgoing></bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_CallResult" name="Результат дзвінка?"><bpmn:incoming>Flow_4</bpmn:incoming><bpmn:outgoing>Flow_Retry</bpmn:outgoing><bpmn:outgoing>Flow_Refuse</bpmn:outgoing><bpmn:outgoing>Flow_Confirm</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_Cancel" name="Скасувати замовлення"><bpmn:incoming>Flow_Refuse</bpmn:incoming><bpmn:outgoing>Flow_5</bpmn:outgoing></bpmn:userTask>
+    <bpmn:endEvent id="End_Cancelled" name="Замовлення скасовано"><bpmn:incoming>Flow_5</bpmn:incoming></bpmn:endEvent>
+    <bpmn:userTask id="Task_SendList" name="Сформувати і передати список на склад"><bpmn:incoming>Flow_Confirm</bpmn:incoming><bpmn:outgoing>Flow_6</bpmn:outgoing></bpmn:userTask>
+    <bpmn:userTask id="Task_Pick" name="Зібрати товари за списком"><bpmn:incoming>Flow_6</bpmn:incoming><bpmn:outgoing>Flow_7</bpmn:outgoing></bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gw_InStock" name="Усі товари в наявності?"><bpmn:incoming>Flow_7</bpmn:incoming><bpmn:outgoing>Flow_Yes</bpmn:outgoing><bpmn:outgoing>Flow_No</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_NotifyOOS" name="Повідомити клієнта про відсутність товару"><bpmn:incoming>Flow_No</bpmn:incoming><bpmn:outgoing>Flow_8</bpmn:outgoing></bpmn:userTask>
+    <bpmn:endEvent id="End_OOS" name="Замовлення скасовано / перенесено"><bpmn:incoming>Flow_8</bpmn:incoming></bpmn:endEvent>
+    <bpmn:userTask id="Task_Pack" name="Упакувати та передати кур'єру"><bpmn:incoming>Flow_Yes</bpmn:incoming><bpmn:outgoing>Flow_9</bpmn:outgoing></bpmn:userTask>
+    <bpmn:userTask id="Task_NotifyShip" name="Повідомити клієнта про відправку"><bpmn:incoming>Flow_9</bpmn:incoming><bpmn:outgoing>Flow_10</bpmn:outgoing></bpmn:userTask>
+    <bpmn:endEvent id="End_Shipped" name="Замовлення відправлено"><bpmn:incoming>Flow_10</bpmn:incoming><bpmn:messageEventDefinition id="Med_End_Shipped" messageRef="Msg_End_Shipped" /></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_Order" targetRef="Gw_RetryMerge" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Gw_RetryMerge" targetRef="Task_Review" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_Review" targetRef="Task_Call" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_Call" targetRef="Gw_CallResult" />
+    <bpmn:sequenceFlow id="Flow_Retry" name="не додзвонилися" sourceRef="Gw_CallResult" targetRef="Gw_RetryMerge" />
+    <bpmn:sequenceFlow id="Flow_Refuse" name="клієнт відмовився" sourceRef="Gw_CallResult" targetRef="Task_Cancel" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_Cancel" targetRef="End_Cancelled" />
+    <bpmn:sequenceFlow id="Flow_Confirm" name="підтверджено" sourceRef="Gw_CallResult" targetRef="Task_SendList" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_SendList" targetRef="Task_Pick" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Task_Pick" targetRef="Gw_InStock" />
+    <bpmn:sequenceFlow id="Flow_Yes" name="так" sourceRef="Gw_InStock" targetRef="Task_Pack" />
+    <bpmn:sequenceFlow id="Flow_No" name="ні" sourceRef="Gw_InStock" targetRef="Task_NotifyOOS" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Task_NotifyOOS" targetRef="End_OOS" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Task_Pack" targetRef="Task_NotifyShip" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Task_NotifyShip" targetRef="End_Shipped" />
+  </bpmn:process>
+  <bpmn:message id="Msg_Start_Order" name="Отримано замовлення з сайту" />
+  <bpmn:message id="Msg_End_Shipped" name="Замовлення відправлено" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_AsIs">
+    <bpmndi:BPMNPlane id="BPMNPlane_AsIs" bpmnElement="Collaboration_AsIs">
+      <bpmndi:BPMNShape id="Participant_Buyer_di" bpmnElement="Participant_Buyer" isHorizontal="true"><dc:Bounds x="40" y="20" width="1460" height="60" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Shop_di" bpmnElement="Participant_Shop" isHorizontal="true"><dc:Bounds x="40" y="130" width="1460" height="490" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Manager_di" bpmnElement="Lane_Manager" isHorizontal="true"><dc:Bounds x="70" y="130" width="1430" height="290" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Warehouse_di" bpmnElement="Lane_Warehouse" isHorizontal="true"><dc:Bounds x="70" y="420" width="1430" height="200" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_Order_di" bpmnElement="Start_Order"><dc:Bounds x="152" y="232" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_RetryMerge_di" bpmnElement="Gw_RetryMerge" isMarkerVisible="true"><dc:Bounds x="235" y="225" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Review_di" bpmnElement="Task_Review"><dc:Bounds x="320" y="208" width="120" height="84" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Call_di" bpmnElement="Task_Call"><dc:Bounds x="480" y="208" width="120" height="84" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_CallResult_di" bpmnElement="Gw_CallResult" isMarkerVisible="true"><dc:Bounds x="645" y="225" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Cancel_di" bpmnElement="Task_Cancel"><dc:Bounds x="610" y="308" width="120" height="84" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Cancelled_di" bpmnElement="End_Cancelled"><dc:Bounds x="752" y="332" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendList_di" bpmnElement="Task_SendList"><dc:Bounds x="790" y="208" width="120" height="84" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Pick_di" bpmnElement="Task_Pick"><dc:Bounds x="790" y="478" width="120" height="84" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_InStock_di" bpmnElement="Gw_InStock" isMarkerVisible="true"><dc:Bounds x="955" y="495" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotifyOOS_di" bpmnElement="Task_NotifyOOS"><dc:Bounds x="920" y="308" width="120" height="84" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_OOS_di" bpmnElement="End_OOS"><dc:Bounds x="1092" y="332" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Pack_di" bpmnElement="Task_Pack"><dc:Bounds x="1060" y="478" width="120" height="84" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotifyShip_di" bpmnElement="Task_NotifyShip"><dc:Bounds x="1240" y="208" width="120" height="84" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Shipped_di" bpmnElement="End_Shipped"><dc:Bounds x="1412" y="232" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1"><di:waypoint x="188" y="250" /><di:waypoint x="235" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2"><di:waypoint x="285" y="250" /><di:waypoint x="320" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3"><di:waypoint x="440" y="250" /><di:waypoint x="480" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4"><di:waypoint x="600" y="250" /><di:waypoint x="645" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Retry_di" bpmnElement="Flow_Retry"><di:waypoint x="670" y="225" /><di:waypoint x="670" y="170" /><di:waypoint x="260" y="170" /><di:waypoint x="260" y="225" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Refuse_di" bpmnElement="Flow_Refuse"><di:waypoint x="670" y="275" /><di:waypoint x="670" y="308" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5"><di:waypoint x="730" y="350" /><di:waypoint x="752" y="350" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Confirm_di" bpmnElement="Flow_Confirm"><di:waypoint x="695" y="250" /><di:waypoint x="790" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6"><di:waypoint x="850" y="292" /><di:waypoint x="850" y="478" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7"><di:waypoint x="910" y="520" /><di:waypoint x="955" y="520" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Yes_di" bpmnElement="Flow_Yes"><di:waypoint x="1005" y="520" /><di:waypoint x="1060" y="520" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_No_di" bpmnElement="Flow_No"><di:waypoint x="980" y="495" /><di:waypoint x="980" y="392" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8"><di:waypoint x="1040" y="350" /><di:waypoint x="1092" y="350" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9"><di:waypoint x="1180" y="520" /><di:waypoint x="1210" y="520" /><di:waypoint x="1210" y="250" /><di:waypoint x="1240" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10"><di:waypoint x="1360" y="250" /><di:waypoint x="1412" y="250" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1"><di:waypoint x="170" y="80" /><di:waypoint x="170" y="232" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2"><di:waypoint x="1430" y="232" /><di:waypoint x="1430" y="80" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
